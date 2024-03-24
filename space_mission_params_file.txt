@@ -1,0 +1,35 @@
+pos AGSK [x: -773.411y: 67.7355z: 73.1609]
+pos GSK[x: -739.083y: 237.715z: 73.1609]
+pos LBH[x: 2.83041y: 0.0939569z: -6.37717e+06]
+
+---------------------------------velocity----------------------------------------------
+transversial_vel: 0.316692
+rad_vel: 0.107216
+abs vel: 0.334349
+
+---------------------------------trajactory params----------------------------------------------
+r_normal_AGSK: 779.811
+theta: 2.86372
+ext_param: 1.72278
+u_param: 2.86372
+time: 3069.46
+
+---------------------------------LBH params----------------------------------------------
+N_param: 6.37833e+06
+B_param: 0.0939569
+H_param: -6.37717e+06
+La_param: 0.311186
+L_param: 2.83041
+D_param: 776.371
+
+---------------------------------density----------------------------------------------
+120 density:  inf inf inf inf inf inf
+---------------------------------acceleration----------------------------------------------
+acceleration:
+	acc with density number: 0	with cores: [ -inf -inf inf	]
+	acc with density number: 1	with cores: [ -inf -inf inf	]
+	acc with density number: 2	with cores: [ -inf -inf inf	]
+	acc with density number: 3	with cores: [ -inf -inf inf	]
+	acc with density number: 4	with cores: [ -inf -inf inf	]
+	acc with density number: 5	with cores: [ -inf -inf inf	]
+	acc with density number: 6	with cores: [ -inf -inf inf	]
