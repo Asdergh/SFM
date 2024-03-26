@@ -30,7 +30,7 @@ class MechanicCalculator():
         self.earth_anguler_vel = 7.2921159e-5
         self.earth_ext_param = 0.0067385254
         self.static_density = 1.58868e-8
-        self.SM_earth_axis = 6378136.0
+        self.SM_earth_axis = 6378136.0 / 100
 
         self.accuracy = (0.001 * np.pi) / 180.0
         self.ND_upper_120 = 1.58868e-8
@@ -55,15 +55,21 @@ class MechanicCalculator():
             [6.72086e-18, -2.05736e-17, -2.35576e-17, -2.01726e-17, -5.34955e-18, -4.94989e-18, 1.9849e-18]
         ])
 
-        self.night_density_120 = np.zeros(6)
-        self.night_density_500 = np.zeros(6)
+        self.night_density_120 = np.zeros(7)
+        self.night_density_500 = np.zeros(7)
+
+        self.period = np.sqrt(self.Sm_axis ** 3 / self.earth_grav_param)
 
         print(self.night_density_coeffs_120.shape)
         print(self.night_density_coeffs_500.shape)
         self.constant_night_density = 1.58868e-8
 
 
-    def _calculate_anomalies(self):
+    def _calculate_anomalies(self, time=None):
+        
+        if time is not None:
+
+            self.M_param = ((2 * np.pi) / self.period) * time
 
         self.ext_anomaly_past = self.M_param
         self.ext_anomaly = self.M_param + self.Ext_param * np.sin(self.ext_anomaly_past)
@@ -72,6 +78,8 @@ class MechanicCalculator():
 
             self.ext_anomaly_past = self.ext_anomaly
             self.ext_anomaly = self.M_param + self.Ext_param * np.sin(self.ext_anomaly_past)
+        
+
 
         self.theta_anomaly = 2 * np.arctanh(np.sqrt((1 + self.Ext_param) / (1 - self.Ext_param)) * np.tan(self.ext_anomaly / 2))
         self.position_norma_AGSK = self.Focal_param * (1 - self.Ext_param ** 2) / (1 + self.Ext_param * np.cos(self.theta_anomaly))
@@ -110,15 +118,17 @@ class MechanicCalculator():
 
         self.position_LBH = np.zeros(3)
         self.D_param = np.sqrt(self.position_GSK[0] ** 2 + self.position_GSK[1] ** 2)
-        
+        print(f"D param: {self.D_param}")
         if self.D_param == 0:
-
+            
+            print("[Test one] !!!")
             self.B_param = (np.pi / 2) * self.position_GSK[2] / np.abs(self.position_GSK[2])
             self.L_param = 0
             self.H_param = self.position_GSK[2] * np.sin(self.B_param - self.SM_earth_axis * np.sqrt(1 - self.earth_ext_param * np.sin(self.B_param) ** 2))
 
         elif self.D_param > 0:
-
+            
+            print("[Test two] !!!")
             self.La_param = np.arcsin(self.position_GSK[1] / self.D_param)
             
             if (self.position_GSK[1] < 0 and self.position_GSK[0] > 0):
@@ -139,20 +149,22 @@ class MechanicCalculator():
             
             
             if (self.position_GSK[2] == 0):
-
+                
+                print("[Test three]!!!")
                 self.B_param = 0
                 self.H_param = self.D_param - self.SM_earth_axis
             
             else:
-
+                
+                print("[Test four]!!!")
                 position_norma_GSK = np.sqrt(self.position_GSK[0] ** 2 + self.position_GSK[1] ** 2 + self.position_GSK[2] ** 2)
                 c_param = np.arcsin(self.position_GSK[2] / position_norma_GSK)
                 p_param = (self.earth_ext_param * self.SM_earth_axis) / (2 * position_norma_GSK)
 
                 s_past_param = 0
                 b_param = c_param + s_past_param
-                print((p_param * np.sin(2 * b_param)) // np.sqrt(1 - self.earth_ext_param * np.sin(b_param) ** 2))
-                s_param = np.arcsin((p_param * np.sin(2 * b_param)) // np.sqrt(1 - self.earth_ext_param * np.sin(b_param) ** 2))
+                print((p_param * np.sin(2 * b_param)) / np.sqrt(1 - self.earth_ext_param * np.sin(b_param) ** 2))
+                s_param = np.arcsin((p_param * np.sin(2 * b_param)) / np.sqrt(1 - self.earth_ext_param * np.sin(b_param) ** 2))
 
 
                 while (s_param - s_past_param):
@@ -161,7 +173,16 @@ class MechanicCalculator():
                     s_param = np.arcsin((p_param * np.sin(2 * b_param)) // np.sqrt(1 - self.earth_ext_param * np.sin(b_param) ** 2))
                 
                 self.B_param = b_param
-                self.H_param = self.D_param * np.cos(self.B_param) + self.position_GSK[1] - self.SM_earth_axis * np.sqrt(1 - self.earth_ext_param * np.sin(self.B_param) ** 2)
+                print(f"B param: {self.B_param}")
+                print(f"D param: {self.D_param}")
+                print(f"D * cos(B) + z * sin(B): {self.D_param * np.cos(self.B_param) + self.position_GSK[2] * np.sin(self.B_param)}")
+                print(f"a * sqrt(1 - Earth_ext * sin(B) ** 2): {self.Sm_axis * np.sqrt(1 - self.earth_ext_param * np.sin(self.B_param) ** 2)}")
+                self.H_param = self.D_param * np.cos(self.B_param) + self.position_GSK[2] * np.sin(self.B_param) - self.Sm_axis * np.sqrt(1 - self.earth_ext_param * np.sin(self.B_param) ** 2)
+
+        
+        self.position_LBH[0] = self.L_param
+        self.position_LBH[1] = self.B_param
+        self.position_LBH[2] = self.H_param
             
     
     def _calculate_density(self):
@@ -170,10 +191,9 @@ class MechanicCalculator():
 
         if self.H_param < 500:
             
-            print("[Test 1] !!!")
             self.upper_500 = False
-            self.night_density_120 = np.zeros(6)
-            for vector_number in range(self.night_density_coeffs_120.shape[1] - 1):
+            self.night_density_120 = np.zeros(7)
+            for vector_number in range(self.night_density_coeffs_120.shape[1]):
 
                 self.night_density_120[vector_number] = self.constant_night_density * (self.night_density_coeffs_120[0, vector_number] + self.night_density_coeffs_120[1, vector_number] * self.H_param
                                                                + self.night_density_coeffs_120[2, vector_number] * self.H_param ** 2 
@@ -184,10 +204,9 @@ class MechanicCalculator():
             print(f"density: {self.night_density_120}")
         elif (self.H_param > 500):
             
-            print("[Test 2] !!!")
             self.upper_500 = True
-            self.night_density_500 = np.zeros(6)
-            for vector_number in range(self.night_density_coeffs_500.shape[1] - 1):
+            self.night_density_500 = np.zeros(7)
+            for vector_number in range(self.night_density_coeffs_500.shape[1]):
 
                 self.night_density_500[vector_number] = self.constant_night_density * (self.night_density_coeffs_500[0, vector_number] + self.night_density_coeffs_500[1, vector_number] * self.H_param
                                                                + self.night_density_coeffs_500[2, vector_number] * self.H_param ** 2 
@@ -199,7 +218,7 @@ class MechanicCalculator():
 
     def _calculate_acceleration(self):
 
-        self.acceleration_tensor = np.zeros((6, 3))
+        self.acceleration_tensor = np.zeros((7, 3))
 
         if self.upper_500 == False:
             
@@ -209,12 +228,6 @@ class MechanicCalculator():
                 acceleration_S = -density * self.abs_velocity * self.radial_velocity
                 acceleration_T = -density * self.abs_velocity * self.transversial_velocity
                 acceleration_ABS = np.sqrt(acceleration_T ** 2 + acceleration_S ** 2)
-
-                print(f"density: {density}")
-                print(f"density_number: {density_number}")
-                print(f"abs vel: {self.abs_velocity}")
-                print(f"radial vel: {self.radial_velocity}")
-                print(f"transversial vel: {self.transversial_velocity}")
 
                 self.acceleration_tensor[density_number, 0] = acceleration_S
                 self.acceleration_tensor[density_number, 1] = acceleration_T
@@ -228,11 +241,6 @@ class MechanicCalculator():
                 acceleration_T = -density * self.abs_velocity * self.transversial_velocity
                 acceleration_ABS = np.sqrt(acceleration_T ** 2 + acceleration_S ** 2)
 
-                print(f"density: {density}")
-                print(f"density_number: {density_number}")
-                print(f"abs vel: {self.abs_velocity}")
-                print(f"radial vel: {self.radial_velocity}")
-                print(f"transversial vel: {self.transversial_velocity}")
 
                 self.acceleration_tensor[density_number, 0] = acceleration_S
                 self.acceleration_tensor[density_number, 1] = acceleration_T
@@ -259,19 +267,72 @@ class MechanicCalculator():
     
     def _start_simulation(self, max_time):
 
-        self.time = 1
+        self.time = np.sqrt(self.Sm_axis ** 3 / self.earth_grav_param)
         self._calculate_anomalies()
         self._calculate_AGSK_pos()
         self._calculate_vellocities()
-
-
 
         self._calculate_GSK_pos(time=self.time)
         self._calculate_LBH_pos()
         self._calculate_density()
         self._calculate_acceleration()
 
-        print(self.acceleration_tensor)
+        print(12 * "-", "anomalies", 12 * "-")
+        print(f"theta anomaly: {self.theta_anomaly}")
+        print(f"E anomaly: {self.ext_anomaly}")
+        print(f"R of AGSK: {self.position_norma_AGSK}")
+
+        print(12 * "-", "position AGSK", 12 * "-")
+        print(f"AGSK[x]: {self.position_AGSK[0]}")
+        print(f"AGSK[y]: {self.position_AGSK[1]}")
+        print(f"AGSK[z]: {self.position_AGSK[2]}")
+
+        print(12 * "-", "velocities", 12 * "-")
+        print(f"transversial vel: {self.transversial_velocity}")
+        print(f"radial vel: {self.radial_velocity}")
+        print(f"abs vel: {self.abs_velocity}")
+
+        print(12 * "-", "position GSK", 12 * "-")
+        print(f"GSK[x]: {self.position_GSK[0]}")
+        print(f"GSK[y]: {self.position_GSK[1]}")
+        print(f"GSK[z]: {self.position_GSK[2]}")
+
+        print(12 * "-", "position LBH", 12 * "-")
+        print(f"LBH[L]: {self.position_LBH[0]}")
+        print(f"LBH[B]: {self.position_LBH[1]}")
+        print(f"LBH[H]: {self.position_LBH[2]}")
+
+        print(12 * "-", "densities", 12 * "-")
+        if self.upper_500:
+
+            print(f"density 75: {self.night_density_500[0]}") 
+            print(f"density 100: {self.night_density_500[0]}") 
+            print(f"density 125: {self.night_density_500[0]}") 
+            print(f"density 150: {self.night_density_500[0]}") 
+            print(f"density 175: {self.night_density_500[0]}") 
+            print(f"density 200: {self.night_density_500[0]}") 
+            print(f"density 250: {self.night_density_500[0]}")
+
+        
+        else:
+
+            print(f"density 75: {self.night_density_120[0]}") 
+            print(f"density 100: {self.night_density_120[0]}") 
+            print(f"density 125: {self.night_density_120[0]}") 
+            print(f"density 150: {self.night_density_120[0]}") 
+            print(f"density 175: {self.night_density_120[0]}") 
+            print(f"density 200: {self.night_density_120[0]}") 
+            print(f"density 250: {self.night_density_120[0]}")
+        
+        print(12 * "-", "accelerations", 12 * "-")
+        print(f"acceleration vector [on 75h]: [x: {self.acceleration_tensor[0, 0]}, y: {self.acceleration_tensor[0, 1]}, z: {self.acceleration_tensor[0, 2]}]")
+        print(f"acceleration vector [on 100h]: [x: {self.acceleration_tensor[1, 0]}, y: {self.acceleration_tensor[1, 1]}, z: {self.acceleration_tensor[1, 2]}]")
+        print(f"acceleration vector [on 125h]: [x: {self.acceleration_tensor[2, 0]}, y: {self.acceleration_tensor[2, 1]}, z: {self.acceleration_tensor[2, 2]}]")
+        print(f"acceleration vector [on 150h]: [x: {self.acceleration_tensor[3, 0]}, y: {self.acceleration_tensor[3, 1]}, z: {self.acceleration_tensor[3, 2]}]")
+        print(f"acceleration vector [on 175h]: [x: {self.acceleration_tensor[4, 0]}, y: {self.acceleration_tensor[4, 1]}, z: {self.acceleration_tensor[4, 2]}]")
+        print(f"acceleration vector [on 200h]: [x: {self.acceleration_tensor[5, 0]}, y: {self.acceleration_tensor[5, 1]}, z: {self.acceleration_tensor[5, 2]}]")
+        print(f"acceleration vector [on 250h]: [x: {self.acceleration_tensor[6, 0]}, y: {self.acceleration_tensor[6, 1]}, z: {self.acceleration_tensor[6, 2]}]")
+
         self._show_data()
     
 if __name__ == "__main__":
